@@ -3,8 +3,10 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from pygame.locals import *
 from Quaternion import *
+import Change_matrix
 
-def visual(data):
+
+def visual(data, Matrix):
     video_flags = OPENGL | DOUBLEBUF
     pygame.init()
     screen = pygame.display.set_mode((800, 610), video_flags)
@@ -17,7 +19,7 @@ def visual(data):
     while 1:
         event = pygame.event.poll()
         [roll, pitch, yaw] = data
-        draw(roll, pitch, yaw)
+        draw(roll, pitch, yaw, Matrix)
         pygame.display.flip()
         frames += 1
         if (event.type == pygame.QUIT) or (data == data1):
@@ -44,7 +46,7 @@ def init():
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
 
-def draw(nx, ny, nz):
+def draw(nx, ny, nz, Matrix):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
     glTranslatef(0, 0.0, -7.0)
@@ -60,31 +62,13 @@ def draw(nx, ny, nz):
     drawText((-2.6, -1.8, 2),
              "Крен: %f, Тангаж: %f, Рысканье: %f" % (roll * 180 / m.pi, pitch * 180 / m.pi, yaw * 180 / m.pi), 16)
     Vectors_static()
-    yawMatrix = np.matrix([
-        [m.cos(yaw), -m.sin(yaw), 0],
-        [m.sin(yaw), m.cos(yaw), 0],
-        [0, 0, 1]
-    ])
-
-    pitchMatrix = np.matrix([
-        [m.cos(pitch), 0, m.sin(pitch)],
-        [0, 1, 0],
-        [-m.sin(pitch), 0, m.cos(pitch)]
-    ])
-
-    rollMatrix = np.matrix([
-        [1, 0, 0],
-        [0, m.cos(roll), -m.sin(roll)],
-        [0, m.sin(roll), m.cos(roll)]
-    ])
-
-    R = yawMatrix * pitchMatrix * rollMatrix
-
-    x1 = R * np.array([[1], [0], [0]])
+    R1 = Change_matrix.change_matrix(roll, pitch, yaw)
+    R1 = Matrix * R1
+    x1 = R1 * np.array([[1], [0], [0]])
     x1 = x1 / np.linalg.norm(x1)
-    y1 = R * np.array([[0], [1], [0]])
+    y1 = R1 * np.array([[0], [1], [0]])
     y1 = y1 / np.linalg.norm(y1)
-    z1 = R * np.array([[0], [0], [1]])
+    z1 = R1 * np.array([[0], [0], [1]])
     z1 = z1 / np.linalg.norm(z1)
 
     glRotatef(roll * 180 / m.pi, x1[0], y1[0], z1[0])  # крен
